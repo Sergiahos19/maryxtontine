@@ -5,35 +5,35 @@ export type ThemeMode = "dark" | "light";
 export const THEME_STORAGE_KEY = "maryx-theme-v1";
 const THEME_CHANGE_EVENT = "maryx-theme-change";
 
-function subscribe(eventName: string, onStoreChange: () => void) {
-  window.addEventListener(eventName, onStoreChange);
+function subscribe(onStoreChange: () => void) {
+  window.addEventListener(THEME_CHANGE_EVENT, onStoreChange);
   window.addEventListener("storage", onStoreChange);
   return () => {
-    window.removeEventListener(eventName, onStoreChange);
+    window.removeEventListener(THEME_CHANGE_EVENT, onStoreChange);
     window.removeEventListener("storage", onStoreChange);
   };
 }
 
 export function useThemePreference() {
-  return useSyncExternalStore(
-    (onStoreChange) => subscribe(THEME_CHANGE_EVENT, onStoreChange),
-    getThemePreference,
-    () => "dark",
-  );
+  return useSyncExternalStore<ThemeMode>(subscribe, getThemePreference, () => "dark");
 }
 
 export function getThemePreference(): ThemeMode {
   if (typeof window === "undefined") return "dark";
-  const stored = window.localStorage.getItem(THEME_STORAGE_KEY);
-  return stored === "light" ? "light" : "dark";
+  try {
+    return window.localStorage.getItem(THEME_STORAGE_KEY) === "light" ? "light" : "dark";
+  } catch {
+    return document.documentElement.classList.contains("light") ? "light" : "dark";
+  }
 }
 
 export function setThemePreference(theme: ThemeMode) {
   if (typeof window === "undefined") return;
-  window.localStorage.setItem(THEME_STORAGE_KEY, theme);
-  document.documentElement.dataset.theme = theme;
+  try {
+    window.localStorage.setItem(THEME_STORAGE_KEY, theme);
+  } catch {
+    // Stockage indisponible (navigation privée) : le thème s’applique pour cette page uniquement.
+  }
   document.documentElement.classList.toggle("light", theme === "light");
-  document.documentElement.classList.toggle("dark", theme === "dark");
   window.dispatchEvent(new Event(THEME_CHANGE_EVENT));
 }
-

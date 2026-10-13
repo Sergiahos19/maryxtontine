@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 
 export function proxy(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
-  const protectedRoute = pathname.startsWith("/admin") || pathname.startsWith("/dashboard") || pathname.startsWith("/account") || pathname === "/notifications" || pathname.startsWith("/notifications/");
+  const protectedRoute = pathname.startsWith("/admin") || pathname.startsWith("/dashboard") || pathname.startsWith("/account") || pathname.startsWith("/notifications") || pathname.startsWith("/history");
   if (!protectedRoute) return NextResponse.next();
 
   if (!request.cookies.has("maryx_session")) {
@@ -15,5 +15,5 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/dashboard/:path*", "/admin/:path*", "/account/:path*", "/notifications/:path*"],
+  matcher: ["/dashboard/:path*", "/admin/:path*", "/account/:path*", "/notifications/:path*", "/history/:path*"],
 };

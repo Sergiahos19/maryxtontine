@@ -1,10 +1,15 @@
 import { createHash, randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
 import type { NextRequest, NextResponse } from "next/server";
 
-import { database, type UserRow } from "@/lib/database";
+import { db, type UserRow } from "@/lib/database";
 
 export const SESSION_COOKIE = "maryx_session";
 const SESSION_DAYS = 14;
+
+/** Longueur minimale des mots de passe : 12 pour l’administration, 8 pour les membres. */
+export function passwordMinLength(role: "ADMIN" | "MEMBER") {
+  return role === "ADMIN" ? 12 : 8;
+}
 
 export function hashPassword(password: string, salt = randomBytes(16).toString("hex")) {
   return {
@@ -19,14 +24,14 @@ export function verifyPassword(password: string, salt: string, storedHash: strin
   return candidate.length === expected.length && timingSafeEqual(candidate, expected);
 }
 
-function hashToken(token: string) {
+export function hashToken(token: string) {
   return createHash("sha256").update(token).digest("hex");
 }
 
-export function issueSession(userId: string, response: NextResponse) {
+export async function issueSession(userId: string, response: NextResponse) {
   const token = randomBytes(32).toString("base64url");
   const expiresAt = new Date(Date.now() + SESSION_DAYS * 24 * 60 * 60 * 1000).toISOString();
-  database.prepare("insert into sessions (token_hash, user_id, expires_at) values (?, ?, ?)").run(hashToken(token), userId, expiresAt);
+  await db.run("insert into sessions (token_hash, user_id, expires_at) values (?, ?, ?)", [hashToken(token), userId, expiresAt]);
   response.cookies.set(SESSION_COOKIE, token, {
     httpOnly: true,
     sameSite: "lax",
@@ -36,11 +41,9 @@ export function issueSession(userId: string, response: NextResponse) {
   });
 }
 
-export function clearSession(request: NextRequest, response: NextResponse) {
+export async function clearSession(request: NextRequest, response: NextResponse) {
   const token = request.cookies.get(SESSION_COOKIE)?.value;
-  if (token) {
-    database.prepare("delete from sessions where token_hash = ?").run(hashToken(token));
-  }
+  if (token) await db.run("delete from sessions where token_hash = ?", [hashToken(token)]);
   response.cookies.set(SESSION_COOKIE, "", {
     httpOnly: true,
     sameSite: "lax",
@@ -50,21 +53,21 @@ export function clearSession(request: NextRequest, response: NextResponse) {
   });
 }
 
-export function getAuthenticatedUser(request: NextRequest): UserRow | null {
+export async function getAuthenticatedUser(request: NextRequest): Promise<UserRow | null> {
   const token = request.cookies.get(SESSION_COOKIE)?.value;
   if (!token) return null;
 
-  const row = database
-    .prepare(`
-      select users.id, users.email, users.first_name, users.last_name, users.phone, users.role, users.status
-      from sessions
-      join users on users.id = sessions.user_id
-      where sessions.token_hash = ? and julianday(sessions.expires_at) > julianday('now') and users.status = 'ACTIVE'
-    `)
-    .get(hashToken(token)) as UserRow | undefined;
+  // Les dates d’expiration sont en ISO 8601 : la comparaison de textes suit l’ordre chronologique.
+  const row = await db.get<UserRow>(`
+    select users.id, users.email, users.first_name, users.last_name, users.phone, users.role, users.status,
+           (select updated_at from avatars where avatars.user_id = users.id) as avatar_updated_at
+    from sessions
+    join users on users.id = sessions.user_id
+    where sessions.token_hash = ? and sessions.expires_at > ? and users.status = 'ACTIVE'
+  `, [hashToken(token), new Date().toISOString()]);
 
   if (!row) {
-    database.prepare("delete from sessions where token_hash = ?").run(hashToken(token));
+    await db.run("delete from sessions where token_hash = ?", [hashToken(token)]);
     return null;
   }
   return row;

@@ -1,20 +1,22 @@
 "use client";
 
-import Link from "next/link";
 import { useState } from "react";
 
+import { AuthLink, AuthShell } from "@/components/layout/auth-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Notice } from "@/components/ui/notice";
 
 export default function ForgotPasswordPage() {
-  const [sent, setSent] = useState(false);
+  const [state, setState] = useState<"idle" | "busy" | "sent" | "unavailable">("idle");
   const [error, setError] = useState("");
 
   async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const form = new FormData(event.currentTarget);
-    const email = String(form.get("email") ?? "").trim();
+    const email = String(new FormData(event.currentTarget).get("email") ?? "").trim();
     if (!email) return;
+    setState("busy");
+    setError("");
     try {
       const response = await fetch("/api/auth/forgot-password", {
         method: "POST",
@@ -22,41 +24,42 @@ export default function ForgotPasswordPage() {
         body: JSON.stringify({ email }),
       });
       const result = await response.json() as { error?: string };
+      if (response.status === 503) return setState("unavailable");
       if (!response.ok) {
-        setError(result.error ?? "La réinitialisation n'est pas disponible.");
-      } else {
-        setError("");
-        setSent(true);
+        setError(result.error ?? "La demande n’a pas pu être envoyée.");
+        return setState("idle");
       }
+      setState("sent");
     } catch {
-      setError("Le service de récupération est inaccessible. Réessayez dans quelques instants.");
+      setError("Le service ne répond pas. Vérifiez votre connexion internet.");
+      setState("idle");
     }
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-[radial-gradient(circle_at_top,_rgba(34,211,238,0.14),transparent_30%),linear-gradient(135deg,#020817,#0f172a_45%,#111827)] px-4 py-12 text-slate-100">
-      <div className="w-full max-w-md rounded-3xl border border-white/10 bg-slate-900/80 p-8 shadow-2xl shadow-cyan-950/30">
-        <div className="mb-8 text-center">
-          <p className="text-sm uppercase tracking-[0.25em] text-cyan-300">MARYX</p>
-          <h1 className="mt-3 text-3xl font-semibold text-white">Mot de passe oublié</h1>
+    <AuthShell
+      title="Mot de passe oublié"
+      description="Recevez un lien par email pour choisir un nouveau mot de passe."
+      footer={<AuthLink href="/auth/signin">Retour à la connexion</AuthLink>}
+    >
+      {state === "sent" ? (
+        <Notice tone="success">
+          Si cette adresse correspond à un compte, un lien valable une heure vient d’être envoyé. Pensez à vérifier vos courriers indésirables.
+        </Notice>
+      ) : state === "unavailable" ? (
+        <div className="space-y-4">
+          <Notice tone="warning">L’envoi d’emails n’est pas encore activé sur ce site.</Notice>
+          <p className="text-ink">
+            Demandez un mot de passe temporaire à l’administrateur de la tontine, puis choisissez-en un nouveau depuis votre profil.
+          </p>
         </div>
-
-        {!sent ? (
-          <form onSubmit={onSubmit} className="space-y-5">
-            <Input label="Email" type="email" name="email" placeholder="nom@exemple.com" required />
-            {error ? <p role="alert" className="text-sm text-red-300">{error}</p> : null}
-            <Button className="w-full" variant="primary" type="submit">Envoyer le lien</Button>
-          </form>
-        ) : (
-          <div className="space-y-4 rounded-2xl border border-emerald-500/20 bg-emerald-500/10 p-4 text-sm text-emerald-200">
-            Si cette adresse est associée à un compte, un lien de réinitialisation sera envoyé.
-          </div>
-        )}
-
-        <div className="mt-6 border-t border-white/10 pt-5 text-center text-sm text-slate-400">
-          <Link href="/auth/signin" className="text-cyan-300 hover:text-cyan-200">Retour à la connexion</Link>
-        </div>
-      </div>
-    </main>
+      ) : (
+        <form onSubmit={onSubmit} className="space-y-4">
+          <Input label="Email du compte" type="email" name="email" autoComplete="email" inputMode="email" placeholder="nom@exemple.com" required />
+          {error ? <Notice tone="error">{error}</Notice> : null}
+          <Button type="submit" block disabled={state === "busy"}>{state === "busy" ? "Envoi..." : "Recevoir le lien"}</Button>
+        </form>
+      )}
+    </AuthShell>
   );
 }

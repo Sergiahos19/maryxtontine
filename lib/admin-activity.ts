@@ -1,14 +1,12 @@
 import { randomUUID } from "node:crypto";
 
-import { database } from "@/lib/database";
+import { db as defaultDb, type Db } from "@/lib/database";
 
-export function recordAdminActivity(memberId: string, action: string, details: string) {
-  const member = database.prepare("select first_name, last_name from members where id = ?").get(memberId) as
-    | { first_name: string; last_name: string }
-    | undefined;
+export async function recordAdminActivity(memberId: string, action: string, details: string, db: Db = defaultDb) {
+  const member = await db.get<{ first_name: string; last_name: string }>("select first_name, last_name from members where id = ?", [memberId]);
   const memberName = member ? `${member.first_name} ${member.last_name}`.trim() : "Compte membre";
-  database.prepare(`
-    insert into admin_notifications (id, member_id, member_name, action, details)
-    values (?, ?, ?, ?, ?)
-  `).run(randomUUID(), memberId, memberName, action, details);
+  await db.run(
+    "insert into admin_notifications (id, member_id, member_name, action, details) values (?, ?, ?, ?, ?)",
+    [randomUUID(), memberId, memberName, action, details],
+  );
 }

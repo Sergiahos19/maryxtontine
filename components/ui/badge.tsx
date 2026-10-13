@@ -4,16 +4,16 @@ type BadgeProps = {
 };
 
 const toneMap = {
-  neutral: "border border-slate-500/40 bg-slate-500/10 text-slate-200",
-  success: "border border-emerald-500/40 bg-emerald-500/10 text-emerald-300",
-  warning: "border border-amber-500/40 bg-amber-500/10 text-amber-200",
-  danger: "border border-red-500/40 bg-red-500/10 text-red-200",
-  info: "border border-cyan-500/40 bg-cyan-500/10 text-cyan-200",
+  neutral: "bg-surface-2 text-muted",
+  success: "bg-ok-soft text-ok",
+  warning: "bg-warn-soft text-warn",
+  danger: "bg-bad-soft text-bad",
+  info: "bg-accent-soft text-accent",
 };
 
 export function Badge({ children, tone = "neutral" }: BadgeProps) {
   return (
-    <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ${toneMap[tone]}`}>
+    <span className={`inline-flex shrink-0 items-center rounded-full px-2.5 py-1 text-xs font-semibold ${toneMap[tone]}`}>
       {children}
     </span>
   );

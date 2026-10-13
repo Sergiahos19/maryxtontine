@@ -1,37 +1,35 @@
 "use client";
 
 import { Eye, EyeOff } from "lucide-react";
-import { useState } from "react";
+import { useId, useState } from "react";
 
-type InputProps = {
+type InputProps = Omit<React.InputHTMLAttributes<HTMLInputElement>, "value"> & {
   label: string;
-  type?: string;
-  name?: string;
-  placeholder?: string;
+  hint?: string;
   value?: string;
-  required?: boolean;
 };
 
-export function Input({ label, type = "text", name, placeholder, value, required = false }: InputProps) {
+export function Input({ label, hint, type = "text", value, className = "", ...props }: InputProps) {
+  const id = useId();
   const [passwordVisible, setPasswordVisible] = useState(false);
   const isPassword = type === "password";
 
   return (
-    <label className="block space-y-2 text-sm text-slate-300">
-      <span>{label}</span>
-      <span className="relative block">
+    <div className={`space-y-1.5 ${className}`}>
+      <label htmlFor={id} className="block text-sm font-medium text-ink">{label}</label>
+      <div className="relative">
         <input
+          id={id}
           type={isPassword && passwordVisible ? "text" : type}
-          name={name}
           defaultValue={value}
-          required={required}
-          placeholder={placeholder}
-          className={`w-full rounded-xl border border-white/10 bg-slate-900/80 px-3 py-2.5 text-slate-100 placeholder:text-slate-500 focus:border-cyan-400 focus:outline-none ${isPassword ? "pr-12" : ""}`}
+          aria-describedby={hint ? `${id}-hint` : undefined}
+          className={`field ${isPassword ? "pr-12" : ""}`}
+          {...props}
         />
         {isPassword ? (
           <button
             type="button"
-            className="absolute inset-y-0 right-3 inline-flex items-center text-slate-400 hover:text-cyan-200"
+            className="absolute inset-y-0 right-1 inline-flex w-11 items-center justify-center rounded-full text-muted hover:text-ink"
             aria-label={passwordVisible ? "Masquer le mot de passe" : "Afficher le mot de passe"}
             aria-pressed={passwordVisible}
             onClick={() => setPasswordVisible((visible) => !visible)}
@@ -39,7 +37,8 @@ export function Input({ label, type = "text", name, placeholder, value, required
             {passwordVisible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
           </button>
         ) : null}
-      </span>
-    </label>
+      </div>
+      {hint ? <p id={`${id}-hint`} className="text-xs text-muted">{hint}</p> : null}
+    </div>
   );
 }

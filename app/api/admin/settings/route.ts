@@ -1,13 +1,13 @@
 import { NextResponse, type NextRequest } from "next/server";
 
-import { database, getDailyContribution, getDailyLatePenalty } from "@/lib/database";
-import { getAuthenticatedUser } from "@/lib/server-auth";
+import { getDailyContribution, getDailyLatePenalty, transaction, utcStamp } from "@/lib/database";
 import { syncMemberBilling } from "@/lib/member-billing";
+import { getAuthenticatedUser } from "@/lib/server-auth";
 
 export const runtime = "nodejs";
 
 export async function PATCH(request: NextRequest) {
-  const admin = getAuthenticatedUser(request);
+  const admin = await getAuthenticatedUser(request);
   if (!admin) return NextResponse.json({ error: "Session requise." }, { status: 401 });
   if (admin.role !== "ADMIN") return NextResponse.json({ error: "Accès administrateur requis." }, { status: 403 });
 
@@ -32,26 +32,15 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ error: "La pénalité doit être un entier compris entre 0 et 1 000 000 000." }, { status: 400 });
   }
 
-  if (hasLatePenalty) syncMemberBilling();
-  const saveSettings = database.transaction(() => {
-    if (hasContribution) {
-      database.prepare(`
-        insert into app_settings (key, value, updated_at)
-        values ('daily_contribution', ?, datetime('now'))
-        on conflict(key) do update set value = excluded.value, updated_at = datetime('now')
-      `).run(String(amount));
-    }
-    if (hasLatePenalty) {
-      database.prepare(`
-        insert into app_settings (key, value, updated_at)
-        values ('daily_late_penalty', ?, datetime('now'))
-        on conflict(key) do update set value = excluded.value, updated_at = datetime('now')
-      `).run(String(latePenalty));
-    }
+  // Fige les échéances et pénalités déjà dues avec les anciens montants avant de changer les tarifs.
+  await syncMemberBilling();
+  await transaction(async (tx) => {
+    const upsert = "insert into app_settings (key, value, updated_at) values (?, ?, ?) on conflict (key) do update set value = excluded.value, updated_at = excluded.updated_at";
+    if (hasContribution) await tx.run(upsert, ["daily_contribution", String(amount), utcStamp()]);
+    if (hasLatePenalty) await tx.run(upsert, ["daily_late_penalty", String(latePenalty), utcStamp()]);
   });
-  saveSettings();
 
-  return NextResponse.json({ dailyContribution: getDailyContribution(), dailyLatePenalty: getDailyLatePenalty() }, {
+  return NextResponse.json({ dailyContribution: await getDailyContribution(), dailyLatePenalty: await getDailyLatePenalty() }, {
     headers: { "Cache-Control": "private, no-store" },
   });
 }

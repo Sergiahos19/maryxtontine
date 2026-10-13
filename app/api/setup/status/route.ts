@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
 
-import { database } from "@/lib/database";
+import { db } from "@/lib/database";
 
 export const runtime = "nodejs";
 
-export function GET() {
-  const adminExists = Boolean(database.prepare("select 1 from users where role = 'ADMIN' limit 1").get());
+export async function GET() {
+  const adminExists = Boolean(await db.get("select 1 from users where role = 'ADMIN' limit 1"));
   return NextResponse.json({ needsAdminSetup: !adminExists && process.env.NODE_ENV !== "production" });
 }

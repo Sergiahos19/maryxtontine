@@ -5,7 +5,7 @@ import { getAuthenticatedUser } from "@/lib/server-auth";
 
 export const runtime = "nodejs";
 
-export function GET(request: NextRequest) {
-  const user = getAuthenticatedUser(request);
-  return NextResponse.json({ user: user ? publicUser(user) : null });
+export async function GET(request: NextRequest) {
+  const user = await getAuthenticatedUser(request);
+  return NextResponse.json({ user: user ? publicUser(user) : null }, { headers: { "Cache-Control": "private, no-store" } });
 }

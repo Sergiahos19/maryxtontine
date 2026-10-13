@@ -1,0 +1,10 @@
+# Jamais envoyé sur Vercel : données locales, secrets et fichiers de travail.
+data/
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal
+.env*
+!.env.example
+reference.jpg
+.next/
+node_modules/

@@ -1,29 +1,36 @@
-import type { ReactNode } from "react";
+import type { LucideIcon } from "lucide-react";
 
-type StatCardProps = {
+import { IconChip, type ChipTone } from "@/components/ui/icon-chip";
+
+type StatProps = {
   label: string;
   value: string;
-  detail: string;
-  accent?: "cyan" | "emerald" | "amber" | "rose";
-  icon: ReactNode;
+  detail?: string;
+  tone?: "default" | "ok" | "warn" | "bad";
+  icon?: LucideIcon;
 };
 
-const accentMap = {
-  cyan: "border-cyan-500/20 bg-cyan-500/10 text-cyan-200",
-  emerald: "border-emerald-500/20 bg-emerald-500/10 text-emerald-200",
-  amber: "border-amber-500/20 bg-amber-500/10 text-amber-200",
-  rose: "border-rose-500/20 bg-rose-500/10 text-rose-200",
+const valueTone = {
+  default: "text-ink",
+  ok: "text-ok",
+  warn: "text-warn",
+  bad: "text-bad",
 };
 
-export function StatCard({ label, value, detail, accent = "cyan", icon }: StatCardProps) {
+const chipTone: Record<NonNullable<StatProps["tone"]>, ChipTone> = {
+  default: "accent",
+  ok: "ok",
+  warn: "warn",
+  bad: "bad",
+};
+
+export function Stat({ label, value, detail, tone = "default", icon }: StatProps) {
   return (
-    <div className={`rounded-2xl border p-5 shadow-lg shadow-slate-950/20 ${accentMap[accent]}`}>
-      <div className="mb-4 flex items-center justify-between">
-        <span className="text-sm text-slate-300">{label}</span>
-        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-900/60">{icon}</div>
-      </div>
-      <div className="text-3xl font-semibold text-white">{value}</div>
-      <div className="mt-2 text-sm text-slate-300">{detail}</div>
+    <div className="card min-w-0 p-4">
+      {icon ? <IconChip icon={icon} tone={chipTone[tone]} className="mb-3" /> : null}
+      <p className="text-xs text-muted">{label}</p>
+      <p className={`mt-1 truncate font-display text-xl font-semibold tabular sm:text-2xl ${valueTone[tone]}`}>{value}</p>
+      {detail ? <p className="mt-1 text-xs text-muted">{detail}</p> : null}
     </div>
   );
 }

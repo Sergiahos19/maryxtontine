@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { NextResponse, type NextRequest } from "next/server";
 
 import { recordAdminActivity } from "@/lib/admin-activity";
-import { database, getDailyContribution } from "@/lib/database";
+import { db, getDailyContribution } from "@/lib/database";
 import {
   createSasPayCheckout,
   getSasPayCheckoutErrorMessage,
@@ -15,7 +15,7 @@ import { getAuthenticatedUser } from "@/lib/server-auth";
 export const runtime = "nodejs";
 
 export async function POST(request: NextRequest) {
-  const user = getAuthenticatedUser(request);
+  const user = await getAuthenticatedUser(request);
   if (!user) return NextResponse.json({ error: "Connectez-vous pour effectuer un paiement." }, { status: 401 });
 
   let form: Record<string, unknown> = {};
@@ -35,20 +35,24 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Choisissez des impayés ou entre 1 et 365 jours de cotisation." }, { status: 400 });
   }
 
-  const member = database.prepare("select id, first_name, last_name, email from members where user_id = ? and status = 'ACTIVE'")
-    .get(user.id) as { id: string; first_name: string; last_name: string; email: string } | undefined;
+  const member = await db.get<{ id: string; first_name: string; last_name: string; email: string }>(
+    "select id, first_name, last_name, email from members where user_id = ? and status = 'ACTIVE' and role = 'MEMBER'",
+    [user.id],
+  );
   if (!member) return NextResponse.json({ error: "Aucun compte membre actif n’est associé à cette session." }, { status: 403 });
 
-  const billing = getMemberBillingSummary(member.id);
+  const billing = await getMemberBillingSummary(member.id);
   if (purpose === "ARREARS" && billing.outstandingDebt <= 0) {
     return NextResponse.json({ error: "Aucun impayé à régulariser." }, { status: 400 });
   }
-  const contributionAmount = purpose === "CONTRIBUTION" ? getDailyContribution() : 0;
+  const contributionAmount = purpose === "CONTRIBUTION" ? await getDailyContribution() : 0;
   const amount = purpose === "ARREARS" ? billing.outstandingDebt : contributionAmount * contributionDays;
   if (!Number.isSafeInteger(amount) || amount < 1) return NextResponse.json({ error: "Le montant calculé est invalide." }, { status: 400 });
   const attemptId = randomUUID();
   const reference = `MARYX-${attemptId.replaceAll("-", "").slice(0, 20).toUpperCase()}`;
-  const configuredUrl = process.env.MARYX_PUBLIC_URL?.trim();
+  // Sur Vercel, l’adresse de production est fournie automatiquement si MARYX_PUBLIC_URL n’est pas définie.
+  const vercelUrl = process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : "";
+  const configuredUrl = process.env.MARYX_PUBLIC_URL?.trim() || vercelUrl;
   if (process.env.NODE_ENV === "production" && !configuredUrl) {
     return NextResponse.json({ error: "Configurez MARYX_PUBLIC_URL pour activer le retour sécurisé du paiement." }, { status: 503 });
   }
@@ -79,13 +83,15 @@ export async function POST(request: NextRequest) {
       returnUrl,
     });
 
-    database.prepare(`
+    await db.run(`
       insert into payment_attempts (id, member_id, gateway_transaction_id, gateway_session_id, reference, amount, currency, purpose, contribution_days, contribution_amount, status, payment_url)
       values (?, ?, ?, ?, ?, ?, 'XOF', ?, ?, ?, 'PENDING', ?)
-    `).run(attemptId, member.id, checkout.sessionId, checkout.sessionId, reference, amount, purpose, contributionDays, contributionAmount, checkout.checkoutUrl);
-    database.prepare("insert into notifications (id, member_id, title, message, severity) values (?, ?, ?, ?, 'info')")
-      .run(randomUUID(), member.id, "Paiement démarré", `${purpose === "ARREARS" ? "Régularisation des impayés" : `Cotisations pour ${contributionDays} jour(s)`} : ${amount.toLocaleString("fr-FR")} FCFA en attente de confirmation.`);
-    recordAdminActivity(member.id, "Paiement démarré", `${purpose === "ARREARS" ? "Régularisation des impayés" : `${contributionDays} jour(s) de cotisation`} : ${amount.toLocaleString("fr-FR")} FCFA via SasPay. Référence : ${reference}.`);
+    `, [attemptId, member.id, checkout.sessionId, checkout.sessionId, reference, amount, purpose, contributionDays, contributionAmount, checkout.checkoutUrl]);
+    await db.run(
+      "insert into notifications (id, member_id, title, message, severity) values (?, ?, ?, ?, 'info')",
+      [randomUUID(), member.id, "Paiement démarré", `${purpose === "ARREARS" ? "Régularisation des impayés" : `Cotisations pour ${contributionDays} jour(s)`} : ${amount.toLocaleString("fr-FR")} FCFA en attente de confirmation.`],
+    );
+    await recordAdminActivity(member.id, "Paiement démarré", `${purpose === "ARREARS" ? "Régularisation des impayés" : `${contributionDays} jour(s) de cotisation`} : ${amount.toLocaleString("fr-FR")} FCFA via SasPay. Référence : ${reference}.`);
 
     return NextResponse.json({ attemptId, checkoutUrl: checkout.checkoutUrl, purpose, contributionDays, amount }, {
       status: 201,

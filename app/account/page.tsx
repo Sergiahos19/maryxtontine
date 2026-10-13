@@ -1,54 +1,60 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { LogOut } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 
-import { Header } from "@/components/layout/header";
+import { AppShell, PageHeading, useSessionUser, useUpdateSessionUser } from "@/components/layout/app-shell";
+import { AvatarPicker } from "@/components/ui/avatar-picker";
 import { Button } from "@/components/ui/button";
+import { Panel } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Notice } from "@/components/ui/notice";
 
 type AccountProfile = {
   firstName: string;
   lastName: string;
   email: string;
   phone: string;
+  role: "ADMIN" | "MEMBER";
 };
 
+type Feedback = { tone: "success" | "error"; text: string } | null;
+
 export default function AccountPage() {
+  return (
+    <AppShell>
+      <Account />
+    </AppShell>
+  );
+}
+
+function Account() {
   const router = useRouter();
+  const sessionUser = useSessionUser();
+  const updateSessionUser = useUpdateSessionUser();
+  const [photoFeedback, setPhotoFeedback] = useState<Feedback>(null);
   const [profile, setProfile] = useState<AccountProfile | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [profileError, setProfileError] = useState("");
-  const [profileSuccess, setProfileSuccess] = useState("");
-  const [passwordError, setPasswordError] = useState("");
-  const [passwordSuccess, setPasswordSuccess] = useState("");
-  const [profileBusy, setProfileBusy] = useState(false);
-  const [passwordBusy, setPasswordBusy] = useState(false);
+  const [loadError, setLoadError] = useState("");
+  const [profileFeedback, setProfileFeedback] = useState<Feedback>(null);
+  const [passwordFeedback, setPasswordFeedback] = useState<Feedback>(null);
+  const [busy, setBusy] = useState("");
 
   useEffect(() => {
     void fetch("/api/account/profile", { cache: "no-store" })
       .then(async (response) => {
         const result = await response.json() as { error?: string; profile?: AccountProfile };
-        if (response.status === 401) {
-          router.replace("/auth/signin");
-          return;
-        }
-        if (!response.ok || !result.profile) {
-          setProfileError(result.error ?? "Impossible de charger votre profil.");
-          return;
-        }
-        setProfile(result.profile);
+        if (!response.ok || !result.profile) setLoadError(result.error ?? "Impossible de charger votre profil.");
+        else setProfile(result.profile);
       })
-      .catch(() => setProfileError("Le service de données est inaccessible."))
-      .finally(() => setLoading(false));
-  }, [router]);
+      .catch(() => setLoadError("Le service est inaccessible."));
+  }, []);
 
   async function onProfileSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
-    setProfileError("");
-    setProfileSuccess("");
-    setProfileBusy(true);
+    setProfileFeedback(null);
+    setBusy("profile");
     try {
       const response = await fetch("/api/account/profile", {
         method: "PATCH",
@@ -62,16 +68,15 @@ export default function AccountPage() {
       });
       const result = await response.json() as { error?: string; profile?: AccountProfile };
       if (!response.ok || !result.profile) {
-        setProfileError(result.error ?? "La mise à jour du profil a échoué.");
+        setProfileFeedback({ tone: "error", text: result.error ?? "La mise à jour a échoué." });
         return;
       }
       setProfile(result.profile);
-      setProfileSuccess("Vos informations ont été mises à jour.");
-      router.refresh();
+      setProfileFeedback({ tone: "success", text: "Informations enregistrées." });
     } catch {
-      setProfileError("Le service de données est inaccessible. Réessayez.");
+      setProfileFeedback({ tone: "error", text: "Le service est inaccessible. Réessayez." });
     } finally {
-      setProfileBusy(false);
+      setBusy("");
     }
   }
 
@@ -79,77 +84,113 @@ export default function AccountPage() {
     event.preventDefault();
     const formElement = event.currentTarget;
     const form = new FormData(formElement);
-    const currentPassword = String(form.get("currentPassword") ?? "");
     const newPassword = String(form.get("newPassword") ?? "");
-    const confirmation = String(form.get("confirmation") ?? "");
-    setPasswordError("");
-    setPasswordSuccess("");
-    if (newPassword !== confirmation) {
-      setPasswordError("La confirmation ne correspond pas au nouveau mot de passe.");
+    setPasswordFeedback(null);
+    if (newPassword !== String(form.get("confirmation") ?? "")) {
+      setPasswordFeedback({ tone: "error", text: "Les deux nouveaux mots de passe ne correspondent pas." });
       return;
     }
-
-    setPasswordBusy(true);
+    setBusy("password");
     try {
       const response = await fetch("/api/account/profile", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ currentPassword, newPassword }),
+        body: JSON.stringify({ currentPassword: String(form.get("currentPassword") ?? ""), newPassword }),
       });
       const result = await response.json() as { error?: string; message?: string };
       if (!response.ok) {
-        setPasswordError(result.error ?? "Le mot de passe n’a pas pu être modifié.");
+        setPasswordFeedback({ tone: "error", text: result.error ?? "Le mot de passe n’a pas pu être modifié." });
         return;
       }
       formElement.reset();
-      setPasswordSuccess(result.message ?? "Votre mot de passe a été modifié.");
+      setPasswordFeedback({ tone: "success", text: result.message ?? "Mot de passe modifié." });
     } catch {
-      setPasswordError("Le service de données est inaccessible. Réessayez.");
+      setPasswordFeedback({ tone: "error", text: "Le service est inaccessible. Réessayez." });
     } finally {
-      setPasswordBusy(false);
+      setBusy("");
     }
   }
 
-  return (
-    <main className="min-h-screen bg-slate-950 text-slate-100">
-      <Header />
-      <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
-        <div className="mb-8">
-          <p className="text-sm uppercase tracking-[0.2em] text-cyan-300">Mon compte</p>
-          <h1 className="mt-2 text-3xl font-semibold text-white">Informations personnelles</h1>
-        </div>
-        {loading ? <p className="text-slate-400">Chargement...</p> : null}
-        {profileError ? <p role="alert" className="mb-5 text-sm text-red-300">{profileError}</p> : null}
-        {profile ? (
-          <div className="space-y-6">
-            <section className="rounded-2xl border border-white/10 bg-slate-900/70 p-5">
-              <h2 className="text-xl font-semibold text-white">Coordonnées</h2>
-              <form onSubmit={onProfileSubmit} className="mt-5 space-y-4">
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <Input label="Prénom" name="firstName" value={profile.firstName} required />
-                  <Input label="Nom" name="lastName" value={profile.lastName} required />
-                </div>
-                <Input label="Email" type="email" name="email" value={profile.email} required />
-                <Input label="Téléphone" type="tel" name="phone" value={profile.phone} required />
-                {profileSuccess ? <p role="status" className="text-sm text-emerald-300">{profileSuccess}</p> : null}
-                <Button type="submit" disabled={profileBusy}>{profileBusy ? "Enregistrement..." : "Enregistrer mes informations"}</Button>
-              </form>
-            </section>
+  async function onPhotoChange(dataUrl: string | null) {
+    setPhotoFeedback(null);
+    setBusy("photo");
+    try {
+      const response = await fetch("/api/account/avatar", {
+        method: dataUrl ? "PUT" : "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: dataUrl ? JSON.stringify({ avatar: dataUrl }) : undefined,
+      });
+      const result = await response.json() as { error?: string; avatarUrl?: string | null };
+      if (!response.ok) {
+        setPhotoFeedback({ tone: "error", text: result.error ?? "La photo n’a pas pu être enregistrée." });
+        return;
+      }
+      updateSessionUser({ avatarUrl: result.avatarUrl ?? null });
+      setPhotoFeedback({ tone: "success", text: dataUrl ? "Photo enregistrée." : "Photo retirée." });
+    } catch {
+      setPhotoFeedback({ tone: "error", text: "Le service est inaccessible. Réessayez." });
+    } finally {
+      setBusy("");
+    }
+  }
 
-            <section className="rounded-2xl border border-white/10 bg-slate-900/70 p-5">
-              <h2 className="text-xl font-semibold text-white">Modifier le mot de passe</h2>
-              <form onSubmit={onPasswordSubmit} className="mt-5 space-y-4">
-                <Input label="Mot de passe actuel" type="password" name="currentPassword" required />
-                <Input label="Nouveau mot de passe (12 caractères minimum)" type="password" name="newPassword" required />
-                <Input label="Confirmer le nouveau mot de passe" type="password" name="confirmation" required />
-                {passwordError ? <p role="alert" className="text-sm text-red-300">{passwordError}</p> : null}
-                {passwordSuccess ? <p role="status" className="text-sm text-emerald-300">{passwordSuccess}</p> : null}
-                <Button type="submit" disabled={passwordBusy}>{passwordBusy ? "Modification..." : "Modifier le mot de passe"}</Button>
-              </form>
-            </section>
+  async function signOut() {
+    setBusy("signout");
+    try {
+      await fetch("/api/auth/signout", { method: "POST" });
+      router.replace("/");
+      router.refresh();
+    } catch {
+      setBusy("");
+    }
+  }
+
+  if (loadError) return <Notice tone="error">{loadError}</Notice>;
+  if (!profile) return <p className="py-16 text-center text-muted">Chargement...</p>;
+
+  const minLength = profile.role === "ADMIN" ? 12 : 8;
+
+  return (
+    <div className="mx-auto max-w-xl space-y-5">
+      <PageHeading title="Profil" description={`${profile.firstName} ${profile.lastName}, ${profile.role === "ADMIN" ? "administrateur" : "membre"}.`} />
+
+      <Panel title="Photo de profil">
+        <AvatarPicker
+          value={sessionUser.avatarUrl}
+          onChange={(dataUrl) => void onPhotoChange(dataUrl)}
+          initials={`${profile.firstName[0] ?? ""}${profile.lastName[0] ?? ""}`.toUpperCase()}
+          disabled={busy === "photo"}
+          label={busy === "photo" ? "Enregistrement..." : "Votre photo"}
+        />
+        {photoFeedback ? <Notice tone={photoFeedback.tone} className="mt-4">{photoFeedback.text}</Notice> : null}
+      </Panel>
+
+      <Panel title="Coordonnées">
+        <form onSubmit={onProfileSubmit} className="space-y-4">
+          <div className="grid grid-cols-2 gap-3">
+            <Input label="Prénom" name="firstName" value={profile.firstName} autoComplete="given-name" required />
+            <Input label="Nom" name="lastName" value={profile.lastName} autoComplete="family-name" required />
           </div>
-        ) : null}
-      </div>
-    </main>
+          <Input label="Téléphone" type="tel" name="phone" value={profile.phone} autoComplete="tel" inputMode="tel" required />
+          <Input label="Email" type="email" name="email" value={profile.email} autoComplete="email" inputMode="email" required />
+          {profileFeedback ? <Notice tone={profileFeedback.tone}>{profileFeedback.text}</Notice> : null}
+          <Button type="submit" block disabled={busy === "profile"}>{busy === "profile" ? "Enregistrement..." : "Enregistrer"}</Button>
+        </form>
+      </Panel>
+
+      <Panel title="Mot de passe" description="Les autres appareils connectés seront déconnectés.">
+        <form onSubmit={onPasswordSubmit} className="space-y-4">
+          <Input label="Mot de passe actuel" type="password" name="currentPassword" autoComplete="current-password" required />
+          <Input label="Nouveau mot de passe" type="password" name="newPassword" autoComplete="new-password" minLength={minLength} hint={`${minLength} caractères minimum.`} required />
+          <Input label="Confirmer le nouveau mot de passe" type="password" name="confirmation" autoComplete="new-password" required />
+          {passwordFeedback ? <Notice tone={passwordFeedback.tone}>{passwordFeedback.text}</Notice> : null}
+          <Button type="submit" variant="secondary" block disabled={busy === "password"}>{busy === "password" ? "Modification..." : "Changer le mot de passe"}</Button>
+        </form>
+      </Panel>
+
+      <Button variant="danger" block onClick={() => void signOut()} disabled={busy === "signout"}>
+        <LogOut className="h-4 w-4" /> Se déconnecter
+      </Button>
+    </div>
   );
 }

@@ -1,156 +1,236 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(html:not(.light), html:not(.light) *));
+
+/* Palette MARYX — thème sombre par défaut, issue du logo (nuit, indigo, glacier, lagon). */
 :root {
+  color-scheme: dark;
   --maryx-navy: #020b1d;
   --maryx-deep: #071b35;
   --maryx-blue: #123b7d;
   --maryx-light: #45c7ff;
   --maryx-cyan: #6ae4ff;
-  --maryx-surface: rgba(15, 23, 42, 0.82);
-  --maryx-border: rgba(148, 163, 184, 0.18);
-  --maryx-text: #e2e8f0;
-  --maryx-muted: #94a3b8;
+  --maryx-ice: #b9dcf5;
+
+  --bg: var(--maryx-navy);
+  --surface: var(--maryx-deep);
+  --surface-2: #0b2546;
+  --line: rgba(185, 220, 245, 0.12);
+  --line-strong: rgba(185, 220, 245, 0.24);
+  --ink: #e6eef7;
+  --muted: #8ea3bd;
+  --accent: var(--maryx-light);
+  --accent-strong: var(--maryx-cyan);
+  --accent-ink: #021228;
+  --accent-soft: rgba(69, 199, 255, 0.12);
+  --heading: var(--maryx-ice);
+  --ok: #4ade80;
+  --ok-soft: rgba(74, 222, 128, 0.12);
+  --warn: #fbbf24;
+  --warn-soft: rgba(251, 191, 36, 0.12);
+  --bad: #fb7185;
+  --bad-soft: rgba(251, 113, 133, 0.12);
+  --ring-empty: rgba(185, 220, 245, 0.14);
+  --ring-today: var(--maryx-ice);
+  --ring-paid: var(--accent);
+  --shadow-card: inset 0 1px 0 rgba(185, 220, 245, 0.05);
+  --shadow-float: 0 24px 60px -24px rgba(0, 0, 0, 0.7);
+  --wash: radial-gradient(120% 90% at 85% 0%, rgba(69, 199, 255, 0.16), transparent 60%), radial-gradient(90% 80% at 0% 100%, rgba(18, 59, 125, 0.45), transparent 65%);
 }
 
 html.light {
   color-scheme: light;
-  --maryx-navy: #f1f5f9;
-  --maryx-deep: #e2e8f0;
-  --maryx-blue: #1d4ed8;
-  --maryx-surface: rgba(255, 255, 255, 0.94);
-  --maryx-border: rgba(71, 85, 105, 0.18);
-  --maryx-text: #0f172a;
-  --maryx-muted: #475569;
+  --bg: #f2f6fb;
+  --surface: #ffffff;
+  --surface-2: #e7eef7;
+  --line: rgba(18, 59, 125, 0.12);
+  --line-strong: rgba(18, 59, 125, 0.24);
+  --ink: #0b1b33;
+  --muted: #4d5f78;
+  --accent: var(--maryx-blue);
+  --accent-strong: #0f4fb8;
+  --accent-ink: #ffffff;
+  --accent-soft: rgba(18, 59, 125, 0.08);
+  --heading: var(--maryx-blue);
+  --ok: #15803d;
+  --ok-soft: rgba(21, 128, 61, 0.1);
+  --warn: #b45309;
+  --warn-soft: rgba(180, 83, 9, 0.1);
+  --bad: #be123c;
+  --bad-soft: rgba(190, 18, 60, 0.08);
+  --ring-empty: rgba(18, 59, 125, 0.12);
+  --ring-today: #4f86d9;
+  --ring-paid: var(--accent);
+  --shadow-card: 0 1px 2px rgba(11, 27, 51, 0.04), 0 10px 30px -14px rgba(18, 59, 125, 0.18);
+  --shadow-float: 0 30px 70px -28px rgba(18, 59, 125, 0.45);
+  --wash: radial-gradient(120% 90% at 85% 0%, rgba(69, 199, 255, 0.22), transparent 60%), radial-gradient(90% 80% at 0% 100%, rgba(18, 59, 125, 0.12), transparent 65%);
 }
 
 @theme inline {
-  --color-background: var(--maryx-navy);
-  --color-foreground: var(--maryx-text);
   --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-display: var(--font-sora);
+  --color-background: var(--bg);
+  --color-foreground: var(--ink);
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-accent: var(--accent);
+  --color-accent-strong: var(--accent-strong);
+  --color-accent-ink: var(--accent-ink);
+  --color-accent-soft: var(--accent-soft);
+  --color-heading: var(--heading);
+  --color-ok: var(--ok);
+  --color-ok-soft: var(--ok-soft);
+  --color-warn: var(--warn);
+  --color-warn-soft: var(--warn-soft);
+  --color-bad: var(--bad);
+  --color-bad-soft: var(--bad-soft);
   --color-maryx-navy: var(--maryx-navy);
-  --color-maryx-deep: var(--maryx-deep);
   --color-maryx-blue: var(--maryx-blue);
-  --color-maryx-light: var(--maryx-light);
+  --color-maryx-ice: var(--maryx-ice);
   --color-maryx-cyan: var(--maryx-cyan);
-  --color-maryx-surface: var(--maryx-surface);
-}
-
-html {
-  scroll-behavior: smooth;
-}
-
-@keyframes maryx-page-enter {
-  from {
-    opacity: 0;
-    transform: translateY(8px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-main {
-  animation: maryx-page-enter 420ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
-}
-
-body {
-  background: radial-gradient(circle at top, rgba(69, 199, 255, 0.14), transparent 22%),
-    linear-gradient(180deg, var(--maryx-navy) 0%, #020817 100%);
-  color: var(--maryx-text);
-  font-family: var(--font-geist-sans), Arial, sans-serif;
-}
-
-html.light body {
-  background: linear-gradient(180deg, #f8fafc 0%, #e2e8f0 100%);
-  color: #0f172a;
-}
-
-html.light main {
-  background: #f1f5f9 !important;
-  color: #0f172a !important;
-}
-
-html.light header,
-html.light footer,
-html.light [class*="bg-slate-950"],
-html.light [class*="bg-slate-900"],
-html.light [class*="bg-slate-800"] {
-  background-color: #fff !important;
-}
-
-html.light [class*="text-white"],
-html.light [class*="text-slate-100"],
-html.light [class*="text-slate-200"],
-html.light [class*="text-slate-300"] {
-  color: #0f172a !important;
-}
-
-html.light [class*="text-slate-400"],
-html.light [class*="text-slate-500"] {
-  color: #475569 !important;
-}
-
-html.light [class*="border-white"] {
-  border-color: rgba(71, 85, 105, 0.18) !important;
-}
-
-html.light input {
-  background-color: #fff !important;
-  color: #0f172a !important;
+  --color-maryx-light: var(--maryx-light);
 }
 
 * {
   box-sizing: border-box;
 }
 
-.card-surface {
-  background: linear-gradient(180deg, rgba(15, 23, 42, 0.94), rgba(15, 23, 42, 0.62));
-  box-shadow: inset 0 1px 0 rgba(148, 163, 184, 0.08), 0 18px 35px rgba(2, 6, 23, 0.24);
+html {
+  -webkit-text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
 }
 
-a[href],
-button:not(:disabled),
-input,
-select {
-  transition: color 180ms ease, background-color 180ms ease, border-color 180ms ease, box-shadow 180ms ease, transform 180ms ease;
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+  font-feature-settings: "ss01", "cv11";
 }
 
-button:not(:disabled):hover {
-  transform: translateY(-1px);
+h1,
+h2,
+h3,
+.font-display {
+  font-family: var(--font-sora), var(--font-geist-sans), sans-serif;
+  letter-spacing: -0.02em;
 }
 
-button:not(:disabled):active {
-  transform: translateY(0) scale(0.98);
+/* Surface standard : carte douce, ombre légère en thème clair. */
+@utility card {
+  border-radius: 1.75rem;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  box-shadow: var(--shadow-card);
 }
 
-[class*="rounded-2xl"][class*="border"] {
-  transition: transform 220ms ease, border-color 220ms ease, box-shadow 220ms ease;
+/* Carte de marque : toujours sombre, quelle que soit la préférence de thème. */
+.brand-card {
+  --ring-empty: rgba(185, 220, 245, 0.16);
+  --ring-today: var(--maryx-ice);
+  --ring-paid: var(--maryx-light);
+  border-radius: 1.75rem;
+  color: #f1f7fd;
+  background:
+    radial-gradient(120% 100% at 100% 0%, rgba(69, 199, 255, 0.28), transparent 55%),
+    linear-gradient(150deg, #123b7d 0%, #0a2550 55%, #061631 100%);
+  box-shadow: var(--shadow-float);
 }
 
-[class*="rounded-2xl"][class*="border"]:hover {
-  transform: translateY(-2px);
-  border-color: rgba(106, 228, 255, 0.3);
-  box-shadow: 0 14px 32px rgba(2, 6, 23, 0.22);
+.brand-card .brand-muted {
+  color: rgba(214, 233, 248, 0.72);
+}
+
+/* Bandeau d’accueil : nuit MARYX dans les deux thèmes. */
+.brand-hero {
+  --ring-empty: rgba(185, 220, 245, 0.12);
+  --ring-today: var(--maryx-ice);
+  --ring-paid: var(--maryx-light);
+  color: #f1f7fd;
+  background:
+    radial-gradient(70% 55% at 78% 62%, rgba(69, 199, 255, 0.22), transparent 70%),
+    radial-gradient(60% 50% at 10% 0%, rgba(18, 59, 125, 0.7), transparent 70%),
+    linear-gradient(180deg, #020b1d 0%, #06193a 100%);
+}
+
+.hero-wash {
+  background: var(--wash), var(--surface);
+}
+
+.icon-chip {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 0.875rem;
+}
+
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Champ de formulaire unique pour toute l’application. */
+.field {
+  display: block;
+  width: 100%;
+  min-height: 3rem;
+  border-radius: 0.875rem;
+  border: 1px solid var(--line-strong);
+  background: var(--bg);
+  color: var(--ink);
+  padding: 0.75rem 0.95rem;
+  font-size: 1rem;
+  transition: border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.field::placeholder {
+  color: var(--muted);
+}
+
+.field:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+.field:disabled {
+  opacity: 0.6;
 }
 
 a[href]:focus-visible,
 button:focus-visible,
-input:focus-visible,
-select:focus-visible {
-  outline: 2px solid var(--maryx-light);
+select:focus-visible,
+summary:focus-visible {
+  outline: 2px solid var(--accent);
   outline-offset: 3px;
 }
 
-::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
+.pb-safe {
+  padding-bottom: calc(env(safe-area-inset-bottom) + 0.5rem);
 }
 
-::-webkit-scrollbar-thumb {
-  background: rgba(148, 163, 184, 0.35);
-  border-radius: 9999px;
+/* Seule animation non déclenchée : le remplissage du cercle de cotisations. */
+@keyframes maryx-ring-fill {
+  from {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.ring-segment {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: maryx-ring-fill 420ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -158,7 +238,7 @@ select:focus-visible {
   *::before,
   *::after {
     animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
+    animation-delay: 0ms !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
