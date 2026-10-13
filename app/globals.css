@@ -1,26 +1,165 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --maryx-navy: #020b1d;
+  --maryx-deep: #071b35;
+  --maryx-blue: #123b7d;
+  --maryx-light: #45c7ff;
+  --maryx-cyan: #6ae4ff;
+  --maryx-surface: rgba(15, 23, 42, 0.82);
+  --maryx-border: rgba(148, 163, 184, 0.18);
+  --maryx-text: #e2e8f0;
+  --maryx-muted: #94a3b8;
+}
+
+html.light {
+  color-scheme: light;
+  --maryx-navy: #f1f5f9;
+  --maryx-deep: #e2e8f0;
+  --maryx-blue: #1d4ed8;
+  --maryx-surface: rgba(255, 255, 255, 0.94);
+  --maryx-border: rgba(71, 85, 105, 0.18);
+  --maryx-text: #0f172a;
+  --maryx-muted: #475569;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  --color-background: var(--maryx-navy);
+  --color-foreground: var(--maryx-text);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  --color-maryx-navy: var(--maryx-navy);
+  --color-maryx-deep: var(--maryx-deep);
+  --color-maryx-blue: var(--maryx-blue);
+  --color-maryx-light: var(--maryx-light);
+  --color-maryx-cyan: var(--maryx-cyan);
+  --color-maryx-surface: var(--maryx-surface);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+html {
+  scroll-behavior: smooth;
+}
+
+@keyframes maryx-page-enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 
+main {
+  animation: maryx-page-enter 420ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: radial-gradient(circle at top, rgba(69, 199, 255, 0.14), transparent 22%),
+    linear-gradient(180deg, var(--maryx-navy) 0%, #020817 100%);
+  color: var(--maryx-text);
+  font-family: var(--font-geist-sans), Arial, sans-serif;
+}
+
+html.light body {
+  background: linear-gradient(180deg, #f8fafc 0%, #e2e8f0 100%);
+  color: #0f172a;
+}
+
+html.light main {
+  background: #f1f5f9 !important;
+  color: #0f172a !important;
+}
+
+html.light header,
+html.light footer,
+html.light [class*="bg-slate-950"],
+html.light [class*="bg-slate-900"],
+html.light [class*="bg-slate-800"] {
+  background-color: #fff !important;
+}
+
+html.light [class*="text-white"],
+html.light [class*="text-slate-100"],
+html.light [class*="text-slate-200"],
+html.light [class*="text-slate-300"] {
+  color: #0f172a !important;
+}
+
+html.light [class*="text-slate-400"],
+html.light [class*="text-slate-500"] {
+  color: #475569 !important;
+}
+
+html.light [class*="border-white"] {
+  border-color: rgba(71, 85, 105, 0.18) !important;
+}
+
+html.light input {
+  background-color: #fff !important;
+  color: #0f172a !important;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+.card-surface {
+  background: linear-gradient(180deg, rgba(15, 23, 42, 0.94), rgba(15, 23, 42, 0.62));
+  box-shadow: inset 0 1px 0 rgba(148, 163, 184, 0.08), 0 18px 35px rgba(2, 6, 23, 0.24);
+}
+
+a[href],
+button:not(:disabled),
+input,
+select {
+  transition: color 180ms ease, background-color 180ms ease, border-color 180ms ease, box-shadow 180ms ease, transform 180ms ease;
+}
+
+button:not(:disabled):hover {
+  transform: translateY(-1px);
+}
+
+button:not(:disabled):active {
+  transform: translateY(0) scale(0.98);
+}
+
+[class*="rounded-2xl"][class*="border"] {
+  transition: transform 220ms ease, border-color 220ms ease, box-shadow 220ms ease;
+}
+
+[class*="rounded-2xl"][class*="border"]:hover {
+  transform: translateY(-2px);
+  border-color: rgba(106, 228, 255, 0.3);
+  box-shadow: 0 14px 32px rgba(2, 6, 23, 0.22);
+}
+
+a[href]:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible {
+  outline: 2px solid var(--maryx-light);
+  outline-offset: 3px;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.35);
+  border-radius: 9999px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
