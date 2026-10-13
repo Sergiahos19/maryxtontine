@@ -1,93 +1,97 @@
+import Image from "next/image";
 import Link from "next/link";
-import { connection } from "next/server";
-import { CalendarCheck, CalendarPlus, CircleAlert, FileCheck2, HandCoins, LockKeyhole, Plus, ShieldCheck, Smartphone, type LucideIcon } from "lucide-react";
+import {
+  BadgeCheck,
+  Briefcase,
+  Eye,
+  EyeOff,
+  Hammer,
+  KeyRound,
+  LockKeyhole,
+  PartyPopper,
+  Plus,
+  ReceiptText,
+  Scale,
+  ScrollText,
+  ShieldCheck,
+  Smartphone,
+  Store,
+} from "lucide-react";
 
-import { ContributionRing, type RingDayState } from "@/components/brand/contribution-ring";
-import { PhonePreview } from "@/components/brand/phone-preview";
 import { Footer } from "@/components/layout/footer";
 import { SiteHeader } from "@/components/layout/site-header";
-import { IconChip, type ChipTone } from "@/components/ui/icon-chip";
-import { getDailyContribution, getDailyLatePenalty } from "@/lib/database";
-import { formatCurrency } from "@/lib/formatters";
 
-// Le grand cercle de l’accueil : un mois, 23 jours cotisés, aujourd’hui, puis les jours à venir.
-const MONTH: { state: RingDayState }[] = Array.from({ length: 30 }, (_, index) => ({
-  state: index < 23 ? "paid" : index === 23 ? "today" : "none",
-}));
+// Photos : Pexels, licence libre (Werner Pfennig, PICHA Stock, Victor Oluwayoju).
 
-type WeekDay = {
-  day: string;
-  title: string;
-  detail: string;
-  amount: string;
-  icon: LucideIcon;
-  tone: ChipTone;
-  state: RingDayState;
-};
+const trust = [
+  { icon: Smartphone, label: "Paiement Mobile Money via SasPay" },
+  { icon: ReceiptText, label: "Un reçu pour chaque versement" },
+  { icon: ScrollText, label: "Les mêmes règles pour tous" },
+  { icon: LockKeyhole, label: "Espace personnel protégé" },
+];
 
-export default async function HomePage() {
-  await connection();
-  const [c, p] = await Promise.all([getDailyContribution(), getDailyLatePenalty()]);
-  const fcfa = (value: number) => formatCurrency(value);
+const steps = [
+  { title: "Formez le cercle", text: "Chaque membre crée son compte avec sa photo. Le groupe se retrouve dans un espace commun." },
+  { title: "L’administrateur fixe les règles", text: "Il définit la cotisation journalière et les pénalités de retard. Elles s’appliquent à tous, automatiquement." },
+  { title: "Chacun cotise chaque jour", text: "Depuis son téléphone, par Mobile Money, pour la journée ou plusieurs jours d’avance." },
+  { title: "Le groupe suit la caisse", text: "Jours payés, retards, reçus : tout est visible, sans cahier ni calculs à la main." },
+];
 
-  // Une semaine réelle, calculée avec les tarifs en vigueur et les règles appliquées par MARYX.
-  const week: WeekDay[] = [
-    { day: "Lun", title: "Cotisation du jour", detail: "Payée par Mobile Money, reçu PDF disponible.", amount: fcfa(c), icon: CalendarCheck, tone: "accent", state: "paid" },
-    { day: "Mar", title: "Cotisation du jour", detail: "Le cercle avance d’un segment.", amount: fcfa(c), icon: CalendarCheck, tone: "accent", state: "paid" },
-    { day: "Mer", title: "Jour oublié", detail: "La cotisation du jour reste due.", amount: `${fcfa(c)} dus`, icon: CircleAlert, tone: "bad", state: "unpaid" },
-    {
-      day: "Jeu",
-      title: p > 0 ? "Pénalité de retard" : "Toujours en retard",
-      detail: p > 0 ? "Une seule par jour, même si plusieurs jours manquent. Une alerte apparaît dans votre espace." : "Aucune pénalité n’est appliquée actuellement.",
-      amount: p > 0 ? `+ ${fcfa(p)}` : fcfa(0),
-      icon: CircleAlert,
-      tone: "warn",
-      state: "unpaid",
-    },
-    {
-      day: "Ven",
-      title: "Tout est régularisé",
-      detail: p > 0 ? "Le paiement règle d’abord les deux pénalités (jeudi et vendredi), puis mercredi, jeudi et vendredi." : "Le paiement règle mercredi, jeudi puis vendredi.",
-      amount: fcfa(2 * p + 3 * c),
-      icon: HandCoins,
-      tone: "ok",
-      state: "paid",
-    },
-    { day: "Sam", title: "Sept jours d’avance", detail: "Couverts à la suite, jusqu’au vendredi suivant.", amount: fcfa(7 * c), icon: CalendarPlus, tone: "accent", state: "paid" },
-    { day: "Dim", title: "Rien à payer", detail: "Le jour est déjà couvert par l’avance.", amount: fcfa(0), icon: ShieldCheck, tone: "ok", state: "paid" },
-  ];
+const reasons = [
+  { icon: Eye, title: "Tout est transparent", text: "Chaque membre sait où en est le groupe : qui est à jour, qui doit régulariser. Plus de doutes ni de discussions sur les comptes." },
+  { icon: Scale, title: "Les mêmes règles pour tous", text: "L’administrateur fixe la cotisation journalière et les pénalités de retard. Elles s’appliquent à chacun, sans exception ni oubli." },
+  { icon: Smartphone, title: "Un simple téléphone suffit", text: "On cotise par Mobile Money, où que l’on soit. Pas de rendez-vous, pas d’argent liquide à transporter." },
+  { icon: ReceiptText, title: "Une trace de chaque franc", text: "Chaque versement donne droit à un reçu, et chacun peut télécharger son relevé complet quand il le souhaite." },
+];
 
-  const figures = [
-    { value: c.toLocaleString("fr-FR"), unit: "FCFA", label: "de cotisation par jour" },
-    { value: p.toLocaleString("fr-FR"), unit: "FCFA", label: "de pénalité par jour de retard" },
-    { value: "365", unit: "jours", label: "payables d’avance en une fois" },
-    { value: "0", unit: "FCFA", label: "pour s’inscrire" },
-  ];
+const security = [
+  { icon: BadgeCheck, title: "Paiements vérifiés", text: "Un versement n’est crédité qu’après confirmation par SasPay, jamais sur simple retour du navigateur." },
+  { icon: KeyRound, title: "Comptes sécurisés", text: "Mots de passe chiffrés et connexions bloquées après des tentatives répétées." },
+  { icon: EyeOff, title: "Discrétion entre membres", text: "Les photos et situations ne sont visibles que par les membres connectés. Emails et téléphones restent privés." },
+];
 
-  const faq = [
-    { question: "Comment payer ma cotisation ?", answer: "Depuis votre espace, choisissez le nombre de jours puis payez par Mobile Money sur la page sécurisée SasPay. Votre compte est crédité dès la confirmation, avec un reçu PDF." },
-    { question: "Que se passe-t-il si je paie en retard ?", answer: p > 0 ? `Une pénalité de ${fcfa(p)} s’ajoute chaque jour où au moins une cotisation reste impayée. Elle ne se cumule pas par jour manqué.` : "Aucune pénalité n’est appliquée actuellement, mais les jours impayés restent dus." },
-    { question: "Puis-je payer plusieurs jours d’avance ?", answer: "Oui, jusqu’à 365 jours. Les jours payés s’ajoutent après le dernier jour déjà couvert : rien n’est jamais payé deux fois." },
-    { question: "Et si je dois faire une pause ?", answer: "L’administrateur peut mettre votre compte en pause. Aucune cotisation ni pénalité ne court pendant cette période." },
-    { question: "J’ai oublié mon mot de passe.", answer: "Demandez un mot de passe temporaire à l’administrateur, puis choisissez-en un nouveau depuis votre profil." },
-  ];
+const goals = [
+  { icon: Briefcase, label: "Lancer une entreprise" },
+  { icon: Store, label: "Ouvrir un commerce" },
+  { icon: Hammer, label: "Équiper un atelier" },
+  { icon: PartyPopper, label: "Préparer un événement" },
+];
 
+const faq = [
+  { question: "Comment payer ma cotisation ?", answer: "Depuis votre espace, choisissez le nombre de jours puis payez par Mobile Money sur la page sécurisée SasPay. Votre compte est crédité dès la confirmation, avec un reçu PDF." },
+  { question: "Que se passe-t-il si je paie en retard ?", answer: "Une pénalité, fixée par l’administrateur, s’ajoute chaque jour où au moins une cotisation reste impayée. Elle ne se cumule pas par jour manqué." },
+  { question: "Puis-je payer plusieurs jours d’avance ?", answer: "Oui, jusqu’à 365 jours. Les jours payés s’ajoutent après le dernier jour déjà couvert : rien n’est jamais payé deux fois." },
+  { question: "Les autres membres voient-ils mes informations ?", answer: "Ils voient votre nom, votre photo et si vous êtes à jour. Votre email et votre numéro de téléphone restent privés." },
+  { question: "Et si je dois faire une pause ?", answer: "L’administrateur peut mettre votre compte en pause. Aucune cotisation ni pénalité ne court pendant cette période." },
+  { question: "J’ai oublié mon mot de passe.", answer: "Demandez un mot de passe temporaire à l’administrateur, puis choisissez-en un nouveau depuis votre profil." },
+];
+
+function SectionTitle({ title, text }: { title: string; text?: string }) {
+  return (
+    <div className="max-w-2xl">
+      <h2 className="text-[2rem] leading-[1.08] font-semibold text-heading sm:text-[2.75rem]">{title}</h2>
+      {text ? <p className="mt-4 max-w-[52ch] text-[1.05rem] leading-relaxed text-muted">{text}</p> : null}
+    </div>
+  );
+}
+
+export default function HomePage() {
   return (
     <div className="flex min-h-dvh flex-col">
-      {/* Bandeau : le téléphone sort du cercle de la tontine */}
+      {/* 1. Accroche */}
       <div className="brand-hero overflow-hidden rounded-b-[2.25rem] sm:rounded-b-[3rem]">
         <SiteHeader onBrand />
-        <section className="mx-auto max-w-6xl px-5 pt-8 sm:px-8 md:grid md:grid-cols-[1fr_1fr] md:items-center md:gap-6 md:pt-10">
-          <div className="md:pb-24">
+        <section className="mx-auto max-w-6xl px-5 pt-8 pb-14 sm:px-8 md:grid md:grid-cols-[1.05fr_0.95fr] md:items-center md:gap-12 md:pt-12 md:pb-20">
+          <div>
             <p className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-3 py-1.5 text-xs font-medium text-maryx-ice">
               <span className="h-1.5 w-1.5 rounded-full bg-maryx-cyan" />
-              Tontine journalière, {fcfa(c)} par jour
+              Tontine en ligne
             </p>
-            <h1 className="mt-5 max-w-[12ch] text-[2.75rem] leading-[1.02] font-bold text-white sm:text-[4.25rem]">
-              Chaque jour compte dans le cercle.
+            <h1 className="mt-5 max-w-[13ch] text-[2.75rem] leading-[1.02] font-bold text-white sm:text-[4.25rem]">
+              Cotisez ensemble. Réalisez vos projets.
             </h1>
-            <p className="mt-5 max-w-[40ch] text-[1.05rem] leading-relaxed text-maryx-ice/80">
-              Cotisez depuis votre téléphone, voyez vos jours se remplir et gardez un reçu de chaque franc versé.
+            <p className="mt-5 max-w-[42ch] text-[1.05rem] leading-relaxed text-maryx-ice/80">
+              MARYX réunit votre groupe autour d’une caisse commune. Chacun cotise chaque jour depuis son téléphone, et tout le monde voit le cercle avancer.
             </p>
             <div className="mt-8 flex flex-col gap-2.5 sm:flex-row">
               <Link href="/auth/signup" className="inline-flex min-h-13 items-center justify-center rounded-full bg-maryx-cyan px-7 font-semibold text-maryx-navy hover:bg-white">
@@ -99,92 +103,145 @@ export default async function HomePage() {
             </div>
           </div>
 
-          <div className="relative mx-auto mt-12 h-[27rem] w-full max-w-[26rem] sm:h-[31rem] md:mt-0">
-            <ContributionRing
-              days={MONTH}
-              stagger={26}
-              thickness={6}
-              title="Un mois dans le cercle : 23 jours cotisés sur 30"
-              className="absolute top-0 left-1/2 w-[min(100%,26rem)] -translate-x-1/2"
-            />
-            <div className="absolute top-[4.5rem] left-1/2 -translate-x-1/2 sm:top-[5rem]">
-              <PhonePreview dailyContribution={c} />
+          <div className="relative mx-auto mt-12 w-full max-w-[30rem] md:mt-0">
+            <div className="relative aspect-[5/4] overflow-hidden rounded-[2rem] ring-1 ring-white/15 shadow-[var(--shadow-float)] md:aspect-[4/5]">
+              <Image
+                src="/images/hero-groupe.jpg"
+                alt="Deux membres de la tontine regardent ensemble leur espace MARYX sur un téléphone."
+                fill
+                priority
+                sizes="(min-width: 768px) 480px, 100vw"
+                className="object-cover object-[45%_50%]"
+              />
+              <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-maryx-navy/55 via-transparent to-transparent" aria-hidden />
             </div>
+
           </div>
         </section>
       </div>
 
       <main className="flex-1">
-        <ul className="mx-auto flex max-w-6xl flex-wrap justify-center gap-x-6 gap-y-3 px-5 pt-8 text-sm text-muted sm:px-8">
-          {[
-            { icon: Smartphone, label: "Mobile Money via SasPay" },
-            { icon: FileCheck2, label: "Reçu PDF à chaque paiement" },
-            { icon: LockKeyhole, label: "Espace personnel protégé" },
-          ].map(({ icon: Icon, label }) => (
-            <li key={label} className="flex items-center gap-2">
-              <Icon className="h-4 w-4 text-accent" strokeWidth={2.2} />
-              {label}
-            </li>
-          ))}
-        </ul>
+        {/* 2. Garanties */}
+        <section className="mx-auto max-w-6xl px-5 pt-10 sm:px-8">
+          <ul className="grid grid-cols-2 gap-x-4 gap-y-4 md:grid-cols-4">
+            {trust.map(({ icon: Icon, label }) => (
+              <li key={label} className="flex items-center gap-3 text-sm text-ink">
+                <Icon className="h-5 w-5 shrink-0 text-accent" strokeWidth={2} />
+                {label}
+              </li>
+            ))}
+          </ul>
+        </section>
 
-        {/* Une semaine dans le cercle : les règles racontées avec de vrais montants */}
-        <section className="mx-auto max-w-6xl px-5 pt-20 sm:px-8 md:grid md:grid-cols-[0.85fr_1.15fr] md:gap-14 md:pt-28">
-          <div className="md:sticky md:top-10 md:self-start">
-            <h2 className="max-w-[14ch] text-[2rem] leading-[1.08] font-semibold text-heading sm:text-5xl">Une semaine dans le cercle.</h2>
-            <p className="mt-4 max-w-[38ch] leading-relaxed text-muted">
-              Un oubli, une pénalité, une régularisation, une avance : voici exactement ce que MARYX calcule pour vous.
-            </p>
-            <div className="mt-7 flex items-center gap-1.5" aria-hidden>
-              {week.map((day) => (
-                <span key={day.day} className={`h-2 flex-1 rounded-full ${day.state === "unpaid" ? "bg-bad" : "bg-accent"}`} />
-              ))}
-            </div>
-          </div>
-
-          <ol className="relative mt-10 md:mt-0">
-            <span className="absolute top-5 bottom-5 left-[1.2rem] w-px bg-line-strong" aria-hidden />
-            {week.map((day) => (
-              <li key={day.day} className="relative flex gap-4 pb-7 last:pb-0">
-                <IconChip icon={day.icon} tone={day.tone} className="relative ring-4 ring-bg" />
-                <div className="min-w-0 flex-1 pt-0.5">
-                  <div className="flex items-baseline justify-between gap-3">
-                    <p className="font-semibold text-ink">
-                      <span className="mr-2 text-sm font-medium text-muted">{day.day}</span>
-                      {day.title}
-                    </p>
-                    <p className={`shrink-0 font-display text-sm font-semibold tabular ${day.tone === "bad" ? "text-bad" : day.tone === "warn" ? "text-warn" : "text-ink"}`}>{day.amount}</p>
+        {/* 3. Comment ça marche */}
+        <section className="mx-auto max-w-6xl px-5 pt-24 sm:px-8 md:pt-32">
+          <SectionTitle title="Quatre étapes, un seul cercle." text="Une tontine comme vous la connaissez, sans le cahier, les relances au téléphone ni les comptes à refaire." />
+          <ol className="mt-12 grid gap-8 md:grid-cols-4 md:gap-6">
+            {steps.map((step, index) => (
+              <li key={step.title} className="relative md:pt-14">
+                <span className="hidden md:absolute md:top-5 md:right-0 md:left-12 md:block md:h-px md:bg-line-strong" aria-hidden />
+                <div className="flex gap-4 md:block">
+                  <span className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-accent font-display text-sm font-semibold text-accent-ink tabular md:absolute md:top-0">
+                    {index + 1}
+                  </span>
+                  <div>
+                    <h3 className="text-lg font-semibold text-ink">{step.title}</h3>
+                    <p className="mt-1.5 text-sm leading-relaxed text-muted">{step.text}</p>
                   </div>
-                  <p className="mt-1 text-sm leading-relaxed text-muted">{day.detail}</p>
                 </div>
               </li>
             ))}
           </ol>
         </section>
 
-        {/* Les règles, en chiffres */}
-        <section className="mx-auto max-w-6xl px-5 pt-24 sm:px-8 md:pt-32">
-          <dl className="grid grid-cols-2 border-t border-line md:grid-cols-4">
-            {figures.map((figure, index) => (
-              <div key={figure.label} className={`border-b border-line py-7 pr-4 md:border-b-0 md:py-9 ${index % 2 === 1 ? "pl-5 border-l md:pl-6" : index === 2 ? "md:border-l md:pl-6" : ""}`}>
-                <dt className="sr-only">{figure.label}</dt>
-                <dd>
-                  <span className="font-display text-[2.6rem] leading-none font-bold text-heading tabular sm:text-6xl">{figure.value}</span>
-                  <span className="ml-1.5 text-sm font-semibold text-muted">{figure.unit}</span>
-                  <span className="mt-2.5 block text-sm text-muted">{figure.label}</span>
-                </dd>
-              </div>
+        {/* 4. Pourquoi MARYX */}
+        <section className="mx-auto max-w-6xl px-5 pt-24 sm:px-8 md:grid md:grid-cols-[0.8fr_1.2fr] md:gap-16 md:pt-32">
+          <div className="md:sticky md:top-12 md:self-start">
+            <SectionTitle
+              title="Pourquoi les groupes choisissent MARYX."
+              text="Une tontine tient sur la confiance. MARYX la rend simple à garder, jour après jour, pour tous les membres."
+            />
+          </div>
+          <ul className="mt-12 grid gap-x-10 sm:grid-cols-2 md:mt-0">
+            {reasons.map(({ icon: Icon, title, text }) => (
+              <li key={title} className="border-t border-line py-8">
+                <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-accent-soft text-accent">
+                  <Icon className="h-6 w-6" strokeWidth={1.8} />
+                </span>
+                <h3 className="mt-5 text-xl font-semibold text-ink">{title}</h3>
+                <p className="mt-2 text-[0.95rem] leading-relaxed text-muted">{text}</p>
+              </li>
             ))}
-          </dl>
+          </ul>
         </section>
 
-        {/* Questions fréquentes */}
-        <section className="mx-auto max-w-6xl px-5 pt-24 pb-20 sm:px-8 md:grid md:grid-cols-[0.85fr_1.15fr] md:gap-14 md:pt-32">
+        {/* 5. Objectif commun */}
+        <section className="mx-auto max-w-6xl px-5 pt-24 sm:px-8 md:grid md:grid-cols-2 md:items-center md:gap-14 md:pt-32">
+          <div className="relative pb-16 sm:pb-20">
+            <div className="relative aspect-[4/3] overflow-hidden rounded-[2rem]">
+              <Image
+                src="/images/objectif-projet.jpg"
+                alt="Trois associées préparent ensemble leur projet d’entreprise."
+                fill
+                sizes="(min-width: 768px) 540px, 100vw"
+                className="object-cover"
+              />
+            </div>
+            <div className="absolute right-4 bottom-0 w-[44%] overflow-hidden rounded-[1.5rem] ring-8 ring-bg sm:right-6">
+              <div className="relative aspect-square">
+                <Image src="/images/commerce.jpg" alt="Une commerçante devant son étal au marché." fill sizes="240px" className="object-cover object-[70%_40%]" />
+              </div>
+            </div>
+          </div>
+          <div className="mt-6 md:mt-0">
+            <SectionTitle
+              title="Un projet commun, financé jour après jour."
+              text="Seul, il faut des années pour réunir un capital. Ensemble, de petites cotisations régulières deviennent la mise de départ du groupe. MARYX garde la caisse lisible pour tous, du premier jour jusqu’au projet."
+            />
+            <ul className="mt-8 grid grid-cols-2 gap-3">
+              {goals.map(({ icon: Icon, label }) => (
+                <li key={label} className="flex items-center gap-3 rounded-2xl border border-line px-4 py-3.5 text-sm font-medium text-ink">
+                  <Icon className="h-5 w-5 shrink-0 text-accent" strokeWidth={2} />
+                  {label}
+                </li>
+              ))}
+            </ul>
+          </div>
+        </section>
+
+        {/* 6. Sécurité */}
+        <section className="mx-auto max-w-6xl px-5 pt-24 sm:px-8 md:pt-32">
+          <div className="brand-card relative overflow-hidden px-7 py-12 sm:px-12 sm:py-16">
+            {/* Anneaux concentriques décoratifs : l’écho du cercle de la tontine. */}
+            <svg className="pointer-events-none absolute -top-40 -right-40 h-[34rem] w-[34rem] text-maryx-ice/10" viewBox="0 0 200 200" fill="none" aria-hidden>
+              {[96, 78, 60, 42].map((radius) => (
+                <circle key={radius} cx="100" cy="100" r={radius} stroke="currentColor" strokeWidth="0.6" />
+              ))}
+            </svg>
+            <div className="relative max-w-xl">
+              <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/10 text-maryx-cyan">
+                <ShieldCheck className="h-6 w-6" strokeWidth={1.8} />
+              </span>
+              <h2 className="mt-6 text-[2rem] leading-[1.1] font-semibold sm:text-[2.75rem]">Votre caisse, protégée à chaque étape.</h2>
+              <p className="brand-muted mt-4 max-w-[46ch] leading-relaxed">La sécurité de l’argent commun passe avant tout : chaque versement est contrôlé, chaque compte est protégé.</p>
+            </div>
+            <ul className="relative mt-12 grid gap-4 md:grid-cols-3">
+              {security.map(({ icon: Icon, title, text }) => (
+                <li key={title} className="rounded-3xl border border-white/12 bg-white/[0.04] p-6 backdrop-blur-sm">
+                  <Icon className="h-6 w-6 text-maryx-cyan" strokeWidth={1.8} />
+                  <p className="mt-4 text-lg font-semibold">{title}</p>
+                  <p className="brand-muted mt-2 text-sm leading-relaxed">{text}</p>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </section>
+
+        {/* 7. Questions fréquentes */}
+        <section className="mx-auto max-w-6xl px-5 pt-24 sm:px-8 md:grid md:grid-cols-[0.85fr_1.15fr] md:gap-14 md:pt-32">
           <div>
-            <h2 className="text-[2rem] leading-[1.08] font-semibold text-heading sm:text-5xl">Questions fréquentes</h2>
-            <p className="mt-4 max-w-[34ch] text-muted">
-              Une autre question ? Contactez l’administrateur de votre tontine.
-            </p>
+            <h2 className="text-[2rem] leading-[1.08] font-semibold text-heading sm:text-[2.75rem]">Questions fréquentes</h2>
+            <p className="mt-4 max-w-[34ch] text-muted">Une autre question ? Contactez l’administrateur de votre tontine.</p>
           </div>
           <div className="mt-8 divide-y divide-line border-y border-line md:mt-0">
             {faq.map((item) => (
@@ -198,6 +255,22 @@ export default async function HomePage() {
                 <p className="max-w-[60ch] pb-5 text-sm leading-relaxed text-muted">{item.answer}</p>
               </details>
             ))}
+          </div>
+        </section>
+
+        {/* 8. Dernier appel */}
+        <section className="mx-auto max-w-6xl px-5 pt-24 pb-20 sm:px-8 md:pt-32">
+          <div className="brand-hero relative overflow-hidden rounded-[2rem] px-7 py-12 text-center sm:px-12 sm:py-16">
+            <h2 className="mx-auto max-w-[18ch] text-[2rem] leading-[1.1] font-semibold text-white sm:text-[2.75rem]">Votre cercle commence aujourd’hui.</h2>
+            <p className="mx-auto mt-4 max-w-[42ch] text-maryx-ice/80">Créez votre compte en deux minutes et rejoignez la caisse commune de votre groupe.</p>
+            <div className="mt-8 flex flex-col justify-center gap-2.5 sm:flex-row">
+              <Link href="/auth/signup" className="inline-flex min-h-13 items-center justify-center rounded-full bg-maryx-cyan px-7 font-semibold text-maryx-navy hover:bg-white">
+                Rejoindre la tontine
+              </Link>
+              <Link href="/auth/signin" className="inline-flex min-h-13 items-center justify-center rounded-full border border-white/20 px-7 font-semibold text-white hover:bg-white/10">
+                Se connecter
+              </Link>
+            </div>
           </div>
         </section>
       </main>
